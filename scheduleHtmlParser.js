@@ -35,58 +35,7 @@ function scheduleHtmlParser(html) {
     courseInfos.push(courseInfo)
   }
 
-  let sectionTimes = [
-    {
-      section: 1,
-      startTime: '8:00',
-      endTime: '8:45'
-    },
-    {
-      section: 2,
-      startTime: '8:50',
-      endTime: '9:35'
-    },
-    {
-      section: 3,
-      startTime: '9:40',
-      endTime: '10:35'
-    },
-    {
-      section: 4,
-      startTime: '10:40',
-      endTime: '11:25'
-    },
-    {
-      section: 5,
-      startTime: '11:30',
-      endTime: '12:15'
-    },
-    {
-      section: 6,
-      startTime: '14:30',
-      endTime: '15:15'
-    },
-    {
-      section: 7,
-      startTime: '15:20',
-      endTime: '16:05'
-    },
-    {
-      section: 8,
-      startTime: '16:10',
-      endTime: '16:55'
-    },
-    {
-      section: 9,
-      startTime: '17:00',
-      endTime: '17:45'
-    },
-    {
-      section: 10,
-      startTime: '17:50',
-      endTime: '18:35'
-    }
-  ]
+  let sectionTimes = getSectionTimes()
 
   console.info({
     courseInfos,
@@ -117,3 +66,87 @@ function getSections(s) {
   }
   return sections
 }
+
+function getSectionTimes() {
+  let date = new Date
+  let month = date.getMonth() + 1
+  let day = date.getDate()
+  // 冬季作息起止时间:2020年11月2日（星期一）至2021年4月4日（星期日）。	
+  let winter = false
+	if (month == 11 && day >= 2 || month >= 4 && day <= 4) {
+    winter = true
+  } else if (month > 11 || month < 4) winter = true
+
+  getTimes(winter)
+  return partTimes
+}
+
+let partTimes = [
+  {
+    section: 1,
+    startTime: '8:00',
+    endTime: '8:45'
+  },
+  {
+    section: 2,
+    startTime: '8:50',
+    endTime: '9:35'
+  },
+  {
+    section: 3,
+    startTime: '9:50',
+    endTime: '10:35'
+  },
+  {
+    section: 4,
+    startTime: '10:40',
+    endTime: '11:25'
+  },
+  {
+    section: 5,
+    startTime: '11:30',
+    endTime: '12:15'
+  }
+]
+
+function getTimes(winter) {
+  let startH = 14, startM = 30
+  if (winter) startM = 00
+  // startTime section endTime
+  let startTime, endTime
+  for (let section = 6; section <= 13; section++) {
+    if (section == 11) {
+      startH = 19, startM = 30
+      if (winter) startM = 0
+    }
+    // startTime = startH + ':' + startM
+    if (startM / 10 < 1) startTime = startH + ":0" + startM
+    else startTime = startH + ':' + startM
+
+    startM += 45
+    if (startM > 59) {
+      startM %= 60
+      startH ++
+    }
+
+    // endTime = startH + ':' + startM
+    if (startM / 10 < 1) endTime = startH + ":0" + startM
+    else endTime = startH + ':' + startM
+
+    if (section !== 8) startM += 5
+    else startM += 15
+    if (startM > 59) {
+      startM %= 60
+      startH ++
+    }
+    partTimes.push({
+      section,
+      startTime,
+      endTime
+    })
+  }
+}
+// getTimes(false)
+// console.log(partTimes)
+
+// getSectionTimes();
