@@ -41,17 +41,24 @@ function scheduleHtmlParser(html) {
     courseInfos,
     sectionTimes
   })
-  
-  return { courseInfos: courseInfos,  sectionTimes: sectionTimes }
+
+  return {
+    courseInfos,
+    sectionTimes
+  }
 }
 
 function getWeeks(s) {
-  let weekArr = s.match(/\d+(.\d+)?/g)[0].split('~') // 获取是1~10
-  let begin = weekArr[0]
-  let end = weekArr[1]
   let weeks = []
-  for (let i = Number(begin); i <= Number(end); i++) {
-    weeks.push(i)
+  if (s.indexOf("~") != -1) {
+    let weekArr = s.match(/\d+(.\d+)?/g)[0].split('~') // 获取是1~10
+    let begin = weekArr[0]
+    let end = weekArr[1]
+    for (let i = Number(begin); i <= Number(end); i++) {
+      weeks.push(i)
+    }
+  } else {
+    weeks.push(parseInt(s))
   }
   return weeks;
 }
