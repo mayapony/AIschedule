@@ -1,0 +1,439 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr">
+<head>
+  <title></title>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="pragma" content="no-cache" />
+  <meta http-equiv="cache-control" content="no-cache" />
+  <meta http-equiv="expires" content="0" />
+  <meta http-equiv="content-style-type" content="text/css" />
+  <meta http-equiv="content-script-type" content="text/javascript" />
+  <link href="/ahpu/static/images/ahpu.ico" type="image/x-icon" rel="shortcut icon" />
+  <script type="text/javascript">
+      window.$BG_LANG='zh';
+  </script>
+  <script type="text/javascript" src="/ahpu/static/scripts/jquery/jquery,jquery.ui.core.js?bg=3.4.3"></script>
+  <script type="text/javascript" src="/ahpu/static/scripts/plugins/jquery-form,jquery-history,jquery-colorbox,jquery-chosen.js?bg=3.4.3"></script>
+  <script type="text/javascript" src="/ahpu/static/js/plugins/jquery.subscribe,/js/struts2/jquery.struts2,jquery.ui.struts2.js?bg=3.4.3"></script>
+  <script type="text/javascript" src="/ahpu/static/scripts/beangle/beangle,beangle-ui.js?bg=3.4.3"></script>
+  <script type="text/javascript">var App = {contextPath:"/ahpu"};var funcInit = function () {jQuery.struts2_jquery.version="3.6.1";beangle.contextPath=App.contextPath;jQuery.scriptPath = App.contextPath+"/static/";jQuery.struts2_jquerySuffix = "";jQuery.ajaxSettings.traditional = true;jQuery.ajaxSetup ({cache: false});};</script>
+  <script type="text/javascript" src="/ahpu/static/scripts/my97/WdatePicker-4.72.js?compress=no"></script>
+  <link id="jquery_theme_link" rel="stylesheet" href="/ahpu/static/themes/smoothness/jquery-ui.css?s2j=3.6.1" type="text/css"/>
+  <link id="beangle_theme_link" href="/ahpu/static/themes/default/beangle-ui,colorbox,chosen.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="/ahpu/static/css/foundation.css" type="text/css"/>
+  <script type="text/javascript" src="/ahpu/static/scripts/highcharts.js"></script>
+
+	<script src="/ahpu/static/scripts/require.config.js?v=3"></script>
+	<script>
+	require.baseUrl="/ahpu/static/scripts";
+	</script>
+	<script src="/ahpu/static/scripts/require.js"></script>
+	<script type="text/javascript" src="/ahpu/static/scripts/require.js"></script>
+	
+	<!-- backbone & underscore -- fontend MVC framework -->
+	<script type="text/javascript" src="/ahpu/static/scripts/underscore.min.js"></script>
+	<script type="text/javascript" src="/ahpu/static/scripts/backbone.min.js"></script>
+	<script type="text/javascript" src="/ahpu/static/scripts/underscore.string.min.js"></script>
+	<script>
+	require(['underscore.string'], function(_s) {
+	        _.str = _s;
+	        _.mixin(_.str.exports());
+	});
+	funcInit();
+	//beangle.ajaxhistory = false;
+	</script>
+	
+  
+	<style> 
+		body{
+			overflow-x: auto;    /*水平滚动条*/
+            overflow-y: scroll;  
+		}
+	</style>
+  
+
+</head>
+<body>
+
+<form id="exportTableForm" name="exportTableForm" action="/ahpu/courseTableForStd!courseTable.action" method="post" target="" >
+
+ 
+<script language="JavaScript" type="text/JavaScript" src="/ahpu/static/scripts/course/TaskActivity.js?v3.21"></script>
+<script language="JavaScript">
+  function fillTable(table,weeks,units,tableIndex){
+  
+       for(var i=0;i<weeks;i++){
+        for(var j=0;j<units-1;j++){
+            var index =units*i+j;
+            var preTd=jQuery("#TD"+index+"_"+tableIndex);
+            var nextTd=jQuery("#TD"+(index+1)+"_"+tableIndex);
+            while(table.marshalContents[index]!=null&&table.marshalContents[index+1]!=null&&table.marshalContents[index]==table.marshalContents[index+1]){
+                nextTd.remove();
+                var spanNumber = 1;
+                if(preTd.prop("rowSpan")) spanNumber = new Number(preTd.prop("rowSpan"))
+                spanNumber++;
+                preTd.prop("rowSpan",spanNumber);
+                j++;
+                if(j>=units-1){
+                    break;
+                }
+                index=index+1;
+                nextTd=jQuery("#TD"+(index+1)+"_"+tableIndex);
+            }
+        }
+      }
+      
+        for(var k = 0; k < table.unitCounts; k++){
+      var td=document.getElementById("TD" + k + "_" + tableIndex);
+      if(td != null && table.marshalContents[k] != null) { 
+        td.innerHTML = table.marshalContents[k];
+        td.style.backgroundColor="#94aef3";
+        td.className = "infoTitle";
+        
+        // 查找冲突 table.activities是什么，可以查看TaskActivity.js和courseTableContent_script.ftl
+        var activitiesInCell = table.activities[k];
+        if(detectCollisionInCell(activitiesInCell)) {
+          td.style.backgroundColor="red";
+        }
+        td.className="infoTitle";
+        td.title=table.marshalContents[k].replace(/<br>/g,";");
+      }
+    }
+    }
+function detectCollisionInCell(activitiesInCell) {
+  if(activitiesInCell.length <=1)
+    return false;
+    var isAllBigCourse = true;
+   for (var i = 0; i < activitiesInCell.length; i++) {
+    if (activitiesInCell[i].remark !== '大课排课') {
+        isAllBigCourse = false;
+      }
+   }
+   if (isAllBigCourse) {
+    return false;
+   }
+   
+   
+  //单元格的课程集合[courseId(seqNo)->true]
+  var cellCourseIds=new Object();
+  var mergedValidWeeks = activitiesInCell[0].vaildWeeks.split("");
+  //登记第一个课程
+  cellCourseIds[ activitiesInCell[0].courseName]=true;
+  for(var z = 1; z < activitiesInCell.length; z++) {    
+    var detectCollision = false;
+    var tValidWeeks = activitiesInCell[z].vaildWeeks.split("");
+    if(mergedValidWeeks.length != tValidWeeks.length) {
+      alert('mergedValidWeeks.length != tValidWeeks.length');
+      return;
+    }
+    for(var x = 0; x < mergedValidWeeks.length; x++) {  //53代表53周
+      var m = new Number(mergedValidWeeks[x]);
+      var t = new Number(tValidWeeks[x]);
+      if(m + t <= 1) {
+        mergedValidWeeks[x] = m + t;
+      }
+      else {
+        //如果已经是登记过的，则不算冲突
+          if(!cellCourseIds[activitiesInCell[z].courseName]){
+            return true;  //发现冲突
+          }
+        }
+      }
+      //登记该课程
+      cellCourseIds[activitiesInCell[z].courseName]=true;
+  }
+  return false;
+}
+</script>
+<div id="toolbar17992953991"></div>
+<script type="text/javascript">
+  bar = bg.ui.toolbar("toolbar17992953991",'');
+  	bar.addItem("打印",'bg.Go("/ahpu/courseTableForStd!courseTable.action?setting.kind=std&ids=460209", "_blank")');
+	bar.addItem("导出",'bg.Go("/ahpu/courseTableForStd!exportStdCourseGrade.action?setting.kind=std&ids=460209", "_blank")');
+
+  bar.addHr();
+</script>
+<div id = "ExportA" width="100%" align="center" cellpadding="0" cellspacing="0">
+      <pre>课表格式说明：教师姓名 课程名称(序号) (第n周-第m周,教室)</pre>
+    <table width="100%" id="manualArrangeCourseTable" align="center" class="gridtable"  style="text-align:center" border="1">
+      <thead>
+      <tr>
+          <th style="background-color:#DEEDF7;" height="10px" width="80px">节次/周次</td>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期一</font>
+        </th>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期二</font>
+        </th>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期三</font>
+        </th>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期四</font>
+        </th>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期五</font>
+        </th>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期六</font>
+        </th>
+          <th style="background-color:#DEEDF7;">
+              <font size="2px">星期日</font>
+        </th>
+      </tr>
+      </thead>
+      <tr>
+          <td style="background-color:#EEFF00">
+            <font size="2px"> 第一节</font>
+        </td>
+          <td id="TD0_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD12_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD24_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD36_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD48_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD60_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD72_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#EEFF00">
+            <font size="2px"> 第二节</font>
+        </td>
+          <td id="TD1_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD13_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD25_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD37_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD49_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD61_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD73_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#EEFF00">
+            <font size="2px"> 第三节</font>
+        </td>
+          <td id="TD2_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD14_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD26_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD38_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD50_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD62_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD74_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#EEFF00">
+            <font size="2px"> 第四节</font>
+        </td>
+          <td id="TD3_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD15_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD27_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD39_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD51_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD63_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD75_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#EEFF00">
+            <font size="2px"> 第五节</font>
+        </td>
+          <td id="TD4_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD16_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD28_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD40_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD52_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD64_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD76_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#33BB00">
+            <font size="2px"> 第六节</font>
+        </td>
+          <td id="TD5_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD17_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD29_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD41_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD53_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD65_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD77_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#33BB00">
+            <font size="2px"> 第七节</font>
+        </td>
+          <td id="TD6_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD18_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD30_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD42_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD54_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD66_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD78_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#33BB00">
+            <font size="2px"> 第八节</font>
+        </td>
+          <td id="TD7_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD19_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD31_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD43_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD55_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD67_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD79_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:#33BB00">
+            <font size="2px"> 第九节</font>
+        </td>
+          <td id="TD8_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD20_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD32_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD44_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD56_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD68_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD80_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:pink">
+            <font size="2px"> 第十节</font>
+        </td>
+          <td id="TD9_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD21_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD33_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD45_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD57_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD69_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD81_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:pink">
+            <font size="2px"> 第十一节</font>
+        </td>
+          <td id="TD10_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD22_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD34_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD46_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD58_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD70_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD82_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+      <tr>
+          <td style="background-color:pink">
+            <font size="2px"> 第十二节</font>
+        </td>
+          <td id="TD11_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD23_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD35_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD47_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD59_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD71_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+          <td id="TD83_0"  style="backGround-Color:#ffffff;font-size:12px"></td>
+      </tr>
+    </table> 
+<script language="JavaScript">
+	// function CourseTable in TaskActivity.js
+	
+</script>
+      
+  <div id='tasklesson' style="position: relative;">
+          <br>
+ 
+<strong>课程列表:</strong>
+<div class="grid">
+
+
+<table id="grid17992953991" class="gridtable">
+<thead class="gridhead">
+
+
+<tr>
+<th  width="10%" >序号</th>
+<th  width="15%" >课程代码</th>
+<th  width="15%" >课程名称</th>
+<th  width="10%" >学分</th>
+<th  width="10%" >课程序号</th>
+<th  width="15%" >教师</th>
+<th  width="15%" >备注</th>
+<th  width="10%" >操作</th>
+</tr>
+
+</thead>
+
+<tbody id="grid17992953991_data"><tr>		<td>1</td>
+<td>07311120</td><td>大学计算机基础</td><td>2</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=399475" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">07311120.01</a>
+</td><td>周梁</td><td>      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=399475" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=399475" target="_blank">课程小结</a>
+</td></tr><tr>		<td>2</td>
+<td>11311111</td><td>大学英语（1）</td><td>3</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=398870" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">11311111.94</a>
+</td><td>陈凤民</td><td>      			
+      			<br/>
+      			
+      			<br/>
+      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=398870" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=398870" target="_blank">课程小结</a>
+</td></tr><tr>		<td>3</td>
+<td>12319380</td><td>法学专业导论</td><td>1</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=398759" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">12319380.01</a>
+</td><td>杜蓓蕾</td><td>      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=398759" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=398759" target="_blank">课程小结</a>
+</td></tr><tr>		<td>4</td>
+<td>12329520</td><td>宪法</td><td>2.5</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=397871" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">12329520.01</a>
+</td><td>张雷</td><td>      			
+      			<br/>
+      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=397871" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=397871" target="_blank">课程小结</a>
+</td></tr><tr>		<td>5</td>
+<td>12329830</td><td>法理学（一）</td><td>2</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=397916" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">12329830.01</a>
+</td><td>邓琼</td><td>      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=397916" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=397916" target="_blank">课程小结</a>
+</td></tr><tr>		<td>6</td>
+<td>16311010</td><td>思想道德修养与法律基础</td><td>3</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=399010" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">16311010.52</a>
+</td><td>刘昆笛</td><td>      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=399010" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=399010" target="_blank">课程小结</a>
+</td></tr><tr>		<td>7</td>
+<td>16312021</td><td>形势与政策1</td><td>0</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=398152" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">16312021.30</a>
+</td><td>吉萌</td><td>      			
+</td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=398152" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=398152" target="_blank">课程小结</a>
+</td></tr><tr>		<td>8</td>
+<td>42351030</td><td>军事技能</td><td>2</td><td>		<a href="/ahpu/courseTableForStd!taskTable.action?lesson.id=398344" onclick="return bg.Go(this,null)" title="点击显示单个教学任务具体安排">42351030.A0</a>
+</td><td>金艾裙</td><td></td><td>			<a href="/ahpu/courseTableForStd!teachPlanInfo.action?lesson.id=398344" target="_blank">授课计划</a>
+			<a href="/ahpu/courseTableForStd!courseSummaryInfo.action?lesson.id=398344" target="_blank">课程小结</a>
+</td></tr></tbody>
+</table>
+</div>
+<script type="text/javascript">
+  var clearCheckbox_grid17992953991 = function() {
+    jQuery("#grid17992953991").find(".box:checkbox").removeProp("checked");
+    jQuery("#grid17992953991").find(".gridselect-top :checkbox").removeProp("checked");
+    return true;
+  }
+  
+  page_grid17992953991 = bg.page("/ahpu/courseTableForStd!courseTable.action","");
+  {
+    var _paramstring = 'ignoreHead=1&setting.kind=std&startWeek=&project.id=1&semester.id=81&ids=460209';
+    var _params = _paramstring.split('&');
+    for (var i = 0; i < _params.length; i++) {
+      _params[i] = decodeURIComponent(_params[i]);
+    }
+    _paramstring = _params.join('&');
+    page_grid17992953991.target("",'grid17992953991').action("/ahpu/courseTableForStd!courseTable.action").addParams(_paramstring).orderBy("null");
+  }
+  bg.ui.grid.init('grid17992953991',page_grid17992953991);
+</script>
+  </div >   
+      
+      <br>
+          
+      <br>
+</div>
+
+</form>
+
+  <script type="text/javascript">
+  </script>
+</body>
+</html>
