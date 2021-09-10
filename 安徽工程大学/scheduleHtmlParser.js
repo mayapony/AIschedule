@@ -1,72 +1,103 @@
-function scheduleHtmlParser(html) {
-  const $ = cheerio.load(html, { decodeEntities: false })
-  const tds = $('td.infoTitle')
-  console.log(tds)
-  let courseInfos = []
-  for (let i = 0; i < tds.length; i++) {
-    let td = tds[i]
-    let texts = td.children.filter(text => {
-      return text.type == 'text'
-    })
-    for (let j = 0; j < texts.length; j += 2) {
-      let id = td.attribs.id
-      let title = texts[j].data
-      let address = texts[j + 1].data
-      let span = td.attribs.rowspan
-      courseInfos.push(getCourseInfo(id, title, address, span))
-    }
+function scheduleHtmlParser(js) {
+  let courseInfos
+  try {
+    courseInfos = main(js)
+  } catch (err) {
+    console.info(err)
+    courseInfos = errInfo()
   }
-  console.log(courseInfos)
+  console.info(courseInfos)
   return {
-    courseInfos: courseInfos,
+    courseInfos,
   }
 }
 
-function getCourseInfo(id, title, address, span) {
-  const ALL = 12
-  let blocks = parseInt(id.match(/\d+_/)[0].split('_')[0])
-  let courseInfo = {}
-  courseInfo.name = getName(title)
-  courseInfo.teacher = getTeacherName(title)
-  courseInfo.position = getPosition(address)
-  courseInfo.day = parseInt(blocks / ALL) + 1 + ''
-  courseInfo.weeks = getWeeks(address)
-  courseInfo.sections = getSections(courseInfo.day, blocks, span, ALL)
-  return courseInfo
+function main(js) {
+  allTeachersStr = js.match(/var teachers = \[{id:\d+,name:"\D+",lab:false}\];/gm)
+  allMoreInfoStr = js.match(/\d+\(\d+\.\d+\)",".+?","\d+","\d\D\d{3}\(\D+\)","\d+?"/gm)
+  allIndexInfoStr = js.match(
+    /(			index =\d\*unitCount\+\d;			table0\.activities\[index]\[table0.activities\[index]\.length]=activity;)+/gm
+  )
+  fillTableInfo = js.match(/\(\d,\d+?,\d+\)/)[0].match(/\d+/g)
+  let courseInfos = []
+  for (let i = 0; i < allTeachersStr.length; i++)
+    courseInfos.push(getCourseInfo(allTeachersStr[i], allMoreInfoStr[i], allIndexInfoStr[i], fillTableInfo))
+  console.info(courseInfos)
+  return courseInfos
 }
 
-function getSections(day, blocks, span, ALL) {
-  let start = blocks - (day - 1) * ALL + 1
+function getCourseInfo(teachersStr, moreInfoStr, indexInfoStr, fillTableInfo) {
+  moreInfoStr.replace(/"/g, '')
+  let teacher = getTeacherName(teachersStr)
+  let position = getPosition(moreInfoStr)
+  let name = getName(moreInfoStr)
+  let weeks = getWeeks(moreInfoStr, fillTableInfo)
+  let sectionsAndDay = getSectionsAndDay(indexInfoStr)
+  return {
+    teacher,
+    position,
+    name,
+    weeks,
+    sections: sectionsAndDay.sections,
+    day: sectionsAndDay.day,
+  }
+}
+
+function getSectionsAndDay(indexInfoStr) {
+  const unitCount = 12
   let sections = []
-  for (let i = 0; i < parseInt(span); i++)
+  let indexArr = indexInfoStr.match(/index =\d+\*unitCount\+\d+/g)
+  let index = 0
+  indexArr.forEach(item => {
+    eval(item)
     sections.push({
-      section: start + i,
+      section: (index % unitCount) + 1,
     })
-  return sections
+  })
+  let day = parseInt(index / (unitCount - 1) + 1)
+  return {
+    sections,
+    day,
+  }
 }
 
-function getWeeks(address) {
-  let weekArr = address.match(/\d+\-\d+/)[0].split('-')
-  let start = parseInt(weekArr[0])
-  let end = parseInt(weekArr[1])
-  let step = address.indexOf('单') != -1 || address.indexOf('双') != -1 ? 2 : 1
+function getWeeks(moreInfoStr, fillTableInfo) {
+  let startWeek = parseInt(fillTableInfo[1])
+  let from = parseInt(fillTableInfo[0])
+  let weeksStr = moreInfoStr.split(',')[4]
   let weeks = []
-  for (let i = start; i <= end; i += step) weeks.push(i)
+  for (let i = 0; i < weeksStr.length; i++) if (weeksStr[i] == '1') weeks.push(i + startWeek - from)
   return weeks
 }
 
-function getPosition(address) {
-  return address.match(/\d.\d{3}\(.*\)/)[0]
+function getName(moreInfoStr) {
+  // return moreInfoStr.split(',')[1].split('(')[0].replaceAll('"', '')
+  return moreInfoStr.split(',')[1].split('(')[0].replace(/"/g, '')
 }
 
-function getName(title) {
-  return title.split(' ')[0].split('(')[0]
+function getPosition(moreInfoStr) {
+  // return moreInfoStr.split(',')[3].replaceAll('"', '')
+  return moreInfoStr.split(',')[3].replace(/"/g, '')
 }
 
-function getTeacherName(title) {
-  return deleteBracket(title.match(/\([\D^)]+\)/g)[0])
+function getTeacherName(teachersStr) {
+  // return teachersStr.match(/"[^"]*"/)[0].replaceAll('"', '')
+  return teachersStr.match(/"[^"]*"/)[0].replace(/"/g, '')
 }
 
 function deleteBracket(str) {
   return str.replace(/\(|\)/g, '')
+}
+
+function errInfo() {
+  return [
+    {
+      day: 1,
+      name: '错误请联系开发人员',
+      position: 'QQ: 1327909321',
+      sections: [{ section: 1 }, { section: 2 }, { section: 3 }],
+      teacher: '@maya',
+      weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    },
+  ]
 }

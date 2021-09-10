@@ -1,17 +1,21 @@
 function scheduleHtmlProvider(iframeContent = '', frameContent = '', dom = document) {
+  let res = ''
   getIds(ids => {
     console.log(ids)
-    postCourseTableForStd(ids)
+    res = postCourseTableForStd(ids)
   })
-  return ''
+  return res
 }
 
 function postCourseTableForStd(ids) {
-  res = request(
+  let res = request(
     'POST',
     `ignoreHead=1&setting.kind=std&startWeek=&project.id=1&semester.id=81&ids=${ids}`,
     'courseTableForStd!courseTable.action'
-  )
+  ).replace(/[\r\n]/g, '')
+  // console.log(res)
+  res = res.match(/\/\/ function CourseTable in TaskActivity\.js.+<\/script>/)[0]
+  // console.log(res)
   return res
 }
 
