@@ -1,8 +1,20 @@
 function scheduleHtmlParser(html) {
+  let res
+  try {
+    res = main(html)
+  } catch (err) {
+    console.info(err)
+    res = {
+      courseInfos: errInfo(),
+    }
+  }
+  return res
+}
+
+function main(html) {
   const $ = cheerio.load(html, { decodeEntities: false })
   let p = $('p')
   console.info(p)
-
   let courseInfos = []
   for (let i = 0; i < p.length; i++) {
     let courseInfo = {} //课程相关信息
@@ -153,4 +165,17 @@ function getTimes(winter) {
       endTime,
     })
   }
+}
+
+function errInfo() {
+  return [
+    {
+      day: 1,
+      name: '错误请联系开发人员',
+      position: 'QQ: 1327909321',
+      sections: [{ section: 1 }, { section: 2 }, { section: 3 }],
+      teacher: '@maya',
+      weeks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    },
+  ]
 }
