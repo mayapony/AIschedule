@@ -1,4 +1,5 @@
 function scheduleHtmlParser(js) {
+  // console.log(js)
   let courseInfos
   try {
     courseInfos = main(js)
@@ -14,19 +15,20 @@ function scheduleHtmlParser(js) {
 
 function main(js) {
   allTeachersStr = js.match(/var teachers = \[{id:\d+,name:"\D+",lab:false}\];/gm)
-  allMoreInfoStr = js.match(/\d+\(\d+\.\d+\)",".+?","\d+","\d\D\d{3}\(\D+\)","\d+?"/gm)
+  allMoreInfoStr = js.match(/\d+\(\d+\.\d+\)",".+?","\d+","((\d\D\d{3})|(\D+))\(\D+\)","\d+?"/gm)
   allIndexInfoStr = js.match(
     /(			index =\d\*unitCount\+\d;			table0\.activities\[index]\[table0.activities\[index]\.length]=activity;)+/gm
   )
   fillTableInfo = js.match(/\(\d,\d+?,\d+\)/)[0].match(/\d+/g)
   let courseInfos = []
-  for (let i = 0; i < allTeachersStr.length; i++)
+  for (let i = 0; i < allMoreInfoStr.length; i++)
     courseInfos.push(getCourseInfo(allTeachersStr[i], allMoreInfoStr[i], allIndexInfoStr[i], fillTableInfo))
   console.info(courseInfos)
   return courseInfos
 }
 
 function getCourseInfo(teachersStr, moreInfoStr, indexInfoStr, fillTableInfo) {
+  // console.log('moreInfoStr')
   moreInfoStr.replace(/"/g, '')
   let teacher = getTeacherName(teachersStr)
   let position = getPosition(moreInfoStr)
